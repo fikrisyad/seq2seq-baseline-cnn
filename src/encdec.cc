@@ -20,35 +20,11 @@
 
 #include "attencdec.hpp"
 #include "define.hpp"
+#include "comp.hpp"
 
 using namespace std;
 using namespace cnn;
 using namespace cnn::expr;
-
-// Sort in descending order of length
-struct CompareString {
-  bool operator()(const ParaSent& first, const ParaSent& second) {
-    if(
-       (first.first.size() > second.first.size()) ||
-       (first.first.size() == second.first.size() && first.second.size() > second.second.size())
-    ){
-      return true;
-    }
-    return false;
-  }
-  bool operator()(const Sent& first, const Sent& second) {
-    if(first.size() > second.size()){
-      return true;
-    }
-    return false;
-  }
-  bool operator()(const pair<string, unsigned int>& first, const pair<string, unsigned int>& second) {
-    if(first.second > second.second){
-      return true;
-    }
-    return false;
-  }
-};
 
 void FreqCut(const string file_path, cnn::Dict& d, unsigned int dim_size){
   ifstream in(file_path);
