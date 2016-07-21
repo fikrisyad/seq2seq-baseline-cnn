@@ -19,6 +19,7 @@
 #include <boost/program_options.hpp>
 
 #include "define.hpp"
+#include "encdec.hpp"
 
 #ifndef INCLUDE_GUARD_ATT_ENC_DEC_HPP
 #define INCLUDE_GUARD_ATT_ENC_DEC_HPP
@@ -28,7 +29,9 @@ using namespace cnn;
 using namespace cnn::expr;
 
 template <class Builder>
-struct AttentionalEncoderDecoder {
+class AttentionalEncoderDecoder : public EncoderDecoder<Builder> {
+
+public:
   LookupParameters* p_c;
   LookupParameters* p_ec;  // map input to embedding (used in fwd and rev models)
   Parameters* p_R;
@@ -43,42 +46,42 @@ struct AttentionalEncoderDecoder {
   Expression i_Uahj;
   Expression i_h_enc;
   unsigned int slen;
-  boost::program_options::variables_map& vm;
+  boost::program_options::variables_map* vm;
 
-  explicit AttentionalEncoderDecoder(Model& model, boost::program_options::variables_map& _vm) :
-      dec_builder(
-        _vm.at("depth-layer").as<unsigned int>(),
-        (_vm.at("depth-layer").as<unsigned int>() * 2 + 1) * _vm.at("dim-hidden").as<unsigned int>(),
-        _vm.at("dim-hidden").as<unsigned int>(),
-        &model
-      ),
-      rev_enc_builder(
-        _vm.at("depth-layer").as<unsigned int>(),
-        _vm.at("dim-hidden").as<unsigned int>(),
-        _vm.at("dim-hidden").as<unsigned int>(),
-        &model
-      ),
-      fwd_enc_builder(
-        _vm.at("depth-layer").as<unsigned int>(),
-        _vm.at("dim-hidden").as<unsigned int>(),
-        _vm.at("dim-hidden").as<unsigned int>(),
-        &model
-      ),
-      vm(_vm) {
+  explicit AttentionalEncoderDecoder(Model& model, boost::program_options::variables_map* _vm) :
+    dec_builder(
+      _vm->at("depth-layer").as<unsigned int>(),
+      (_vm->at("depth-layer").as<unsigned int>() * 2 + 1) * _vm->at("dim-hidden").as<unsigned int>(),
+      _vm->at("dim-hidden").as<unsigned int>(),
+      &model
+    ),
+    rev_enc_builder(
+      _vm->at("depth-layer").as<unsigned int>(),
+      _vm->at("dim-hidden").as<unsigned int>(),
+      _vm->at("dim-hidden").as<unsigned int>(),
+      &model
+    ),
+    fwd_enc_builder(
+      _vm->at("depth-layer").as<unsigned int>(),
+      _vm->at("dim-hidden").as<unsigned int>(),
+      _vm->at("dim-hidden").as<unsigned int>(),
+      &model
+    )
+  {
     vm = _vm;
-    p_c = model.add_lookup_parameters(vm.at("src-vocab-size").as<unsigned int>(), {vm.at("dim-hidden").as<unsigned int>()}); 
-    p_ec = model.add_lookup_parameters(vm.at("src-vocab-size").as<unsigned int>(), {vm.at("dim-hidden").as<unsigned int>()}); 
-    p_R = model.add_parameters({vm.at("trg-vocab-size").as<unsigned int>(), vm.at("dim-hidden").as<unsigned int>()});
-    p_bias = model.add_parameters({vm.at("trg-vocab-size").as<unsigned int>()});
-    p_Wa = model.add_parameters({vm.at("dim-attention").as<unsigned int>(), unsigned(vm.at("dim-hidden").as<unsigned int>() * vm.at("depth-layer").as<unsigned int>())});
-    p_Ua = model.add_parameters({vm.at("dim-attention").as<unsigned int>(), unsigned(vm.at("dim-hidden").as<unsigned int>() * 2 * vm.at("depth-layer").as<unsigned int>())});
-    p_va = model.add_parameters({vm.at("dim-attention").as<unsigned int>()});
-    p_zero = model.add_parameters({vm.at("dim-hidden").as<unsigned int>()});
+    p_c = model.add_lookup_parameters(vm->at("trg-vocab-size").as<unsigned int>(), {vm->at("dim-hidden").as<unsigned int>()}); 
+    p_ec = model.add_lookup_parameters(vm->at("src-vocab-size").as<unsigned int>(), {vm->at("dim-hidden").as<unsigned int>()}); 
+    p_R = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>(), vm->at("dim-hidden").as<unsigned int>()});
+    p_bias = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>()});
+    p_Wa = model.add_parameters({vm->at("dim-attention").as<unsigned int>(), unsigned(vm->at("dim-hidden").as<unsigned int>() * vm->at("depth-layer").as<unsigned int>())});
+    p_Ua = model.add_parameters({vm->at("dim-attention").as<unsigned int>(), unsigned(vm->at("dim-hidden").as<unsigned int>() * 2 * vm->at("depth-layer").as<unsigned int>())});
+    p_va = model.add_parameters({vm->at("dim-attention").as<unsigned int>()});
+    p_zero = model.add_parameters({vm->at("dim-hidden").as<unsigned int>()});
   }
 
   // build graph and return Expression for total loss
   //void BuildGraph(const vector<int>& insent, const vector<int>& osent, ComputationGraph& cg) {
-  void Encoder(const Batch sents, ComputationGraph& cg) {
+  virtual void Encoder(const Batch sents, ComputationGraph& cg) {
     // forward encoder
     slen = sents.size();
     fwd_enc_builder.new_graph(cg);
@@ -112,7 +115,7 @@ struct AttentionalEncoderDecoder {
     dec_builder.start_new_sequence(rev_enc_builder.final_s());
   }
 
-  Expression Decoder(ComputationGraph& cg) {
+  virtual Expression Decoder(ComputationGraph& cg) {
     // decode
     Expression i_va = parameter(cg, p_va);
     Expression i_e_t = transpose(tanh(i_Uahj)) * i_va;
@@ -127,7 +130,7 @@ struct AttentionalEncoderDecoder {
     return i_r_t;
   }
 
-  Expression Decoder(ComputationGraph& cg, const BatchCol prev) {
+  virtual Expression Decoder(ComputationGraph& cg, const BatchCol prev) {
     // decode
     Expression i_va = parameter(cg, p_va);
     Expression i_Wa = parameter(cg, p_Wa);
@@ -147,50 +150,6 @@ struct AttentionalEncoderDecoder {
     return i_r_t;
   }
   
-  void GreedyDecode(const Batch& sents, SentList& osents, ComputationGraph &cg){
-   unsigned bsize = sents.at(0).size();
-   //unsigned slen = sents.size();
-   Encoder(sents, cg);
-   Decoder(cg);
-   Batch prev(1);
-   osents.resize(bsize);
-   for(unsigned int bi=0; bi < bsize; bi++){
-     osents[bi].push_back(SOS_TRG);
-     prev[0].push_back((unsigned int)SOS_TRG);
-   }
-   for (int t = 0; t < vm.at("limit-length").as<unsigned int>(); ++t) {
-     unsigned int end_count = 0;
-     for(unsigned int bi=0; bi < bsize; bi++){
-       if(osents[bi][t] == EOS_TRG){
-         end_count++;
-       }
-     }
-     if(end_count == bsize) break;
-     Expression i_r_t = Decoder(cg, prev[t]);
-     Expression predict = softmax(i_r_t);
-     vector<Tensor> results = cg.incremental_forward().batch_elems();
-     prev.resize(t+2);
-     for(unsigned int bi=0; bi < bsize; bi++){
-       auto output = as_vector(results.at(bi));
-       int w_id = 0;
-       if(osents[bi][t] == EOS_TRG){
-         w_id = EOS_TRG;
-       }else{
-         double w_prob = output[w_id];
-         for(unsigned int j=0; j<output.size(); j++){
-           double j_prob = output[j];
-           if(j_prob > w_prob){
-             w_id = j;
-             w_prob = j_prob;
-           }
-         }
-       }
-       osents[bi].push_back(w_id);
-       prev[t+1].push_back((unsigned int)w_id);
-     }
-   }
-}
-
 };
 
 #endif // INCLUDE_GUARD_HOGE_HPP

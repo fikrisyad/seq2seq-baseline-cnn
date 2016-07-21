@@ -18,6 +18,8 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/program_options.hpp>
 
+#include "encdec.hpp"
+#include "expencdec.hpp"
 #include "attencdec.hpp"
 #include "define.hpp"
 #include "comp.hpp"
@@ -227,7 +229,9 @@ void train(boost::program_options::variables_map& vm){
   double best = 9e+99;
   
   Model model;
-  AttentionalEncoderDecoder<Builder> encdec(model, vm);
+  EncoderDecoder<Builder>* encdec;
+  //AttentionalEncoderDecoder<Builder> encdec(model, vm);
+  encdec = new AttentionalEncoderDecoder<Builder>(model, &vm);
   Trainer* sgd = new SimpleSGDTrainer(&model);
   sgd->clip_threshold *= vm.at("batch-size").as<unsigned int>();
   
@@ -253,14 +257,14 @@ void train(boost::program_options::variables_map& vm){
       unsigned bsize = std::min((unsigned)training.size() - order[si], vm.at("batch-size").as<unsigned int>()); // Batch size
       Batch sents, osents;
       ToBatch(order[si], bsize, training, sents, osents);
-      encdec.Encoder(sents, cg);
+      encdec->Encoder(sents, cg);
       vector<Expression> errs;
       {
-        Expression i_r_t = encdec.Decoder(cg);
+        Expression i_r_t = encdec->Decoder(cg);
         Expression i_err = pickneglogsoftmax(i_r_t, osents[0]);
       }
       for (int t = 0; t < osents.size() - 1; ++t) {
-        Expression i_r_t = encdec.Decoder(cg, osents[t]);
+        Expression i_r_t = encdec->Decoder(cg, osents[t]);
         //vector<unsigned int> next = osents[t+1];
         Expression i_err = pickneglogsoftmax(i_r_t, osents[t+1]);
         errs.push_back(i_err);
@@ -287,7 +291,7 @@ void train(boost::program_options::variables_map& vm){
       Batch isents, osents;
       SentList results;
       ToBatch(dev_order[dsi], dev_bsize, dev, isents, osents);
-      encdec.GreedyDecode(isents, results, cg);
+      encdec->GreedyDecode(isents, results, cg);
       for(unsigned int i = 0; i< results.size(); i++){
         dloss -= f_measure(dev.at(i + dev_order[dsi]).second, results.at(i), d_src, d_trg); // future work : replace to bleu
         cerr << "ref" << endl;
@@ -340,7 +344,8 @@ void test(boost::program_options::variables_map& vm){
   //RNNBuilder rnn(vm.at("depth-layer").as<int>(), vm.at("dim-input").as<int>(), vm.at("dim-hidden").as<int>(), &model);
   //EncoderDecoder<SimpleRNNBuilder> lm(model);
   Model model;
-  AttentionalEncoderDecoder<Builder> encdec(model, vm);
+  EncoderDecoder<Builder>* encdec;
+  encdec = new AttentionalEncoderDecoder<Builder>(model, &vm);
   string fname = vm.at("path_model").as<string>();
   cerr << "Reading model from " << vm.at("path_test_src").as<string>() << "...\n";
   ifstream in(fname);
@@ -367,7 +372,7 @@ void test(boost::program_options::variables_map& vm){
     Batch isents, osents;
     SentList results;
     ToBatch(test_order[tsi], test_bsize, test_src, isents);
-    encdec.GreedyDecode(isents, results, cg);
+    encdec->GreedyDecode(isents, results, cg);
     for(unsigned int i = 0; i < results.size(); i++){
       print_sent(test_src.at(i + test_order[tsi]), d_trg);
       print_sent(results.at(i), d_trg);
