@@ -9,7 +9,7 @@ cd $PWD/src
 g++ \
 -g \
 -o \
-encdec-cpu encdec.cc \
+encdec-cpu main.cc \
 -I${PATH_TO_CNN} \
 -I${PATH_TO_EIGEN} \
 -I${BOOST_ROOT}/include \
