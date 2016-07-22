@@ -165,7 +165,17 @@ void train(boost::program_options::variables_map& vm){
   Model model;
   EncoderDecoder<Builder>* encdec;
   //AttentionalEncoderDecoder<Builder> encdec(model, vm);
-  encdec = new AttentionalEncoderDecoder<Builder>(model, &vm);
+  switch(vm.at("encdec-type").as<unsigned int>()){
+    case __EXP_ENC_DEC__:
+    encdec = new ExampleEncoderDecoder<Builder>(model, &vm);
+    break;
+    case __ENC_DEC__:
+    encdec = new EncoderDecoder<Builder>(model, &vm);
+    break;
+    case __ATT_ENC_DEC__:
+    encdec = new AttentionalEncoderDecoder<Builder>(model, &vm);
+    break;
+  }
   Trainer* sgd = new SimpleSGDTrainer(&model);
   sgd->clip_threshold *= vm.at("batch-size").as<unsigned int>();
   
@@ -279,7 +289,17 @@ void test(boost::program_options::variables_map& vm){
   //EncoderDecoder<SimpleRNNBuilder> lm(model);
   Model model;
   EncoderDecoder<Builder>* encdec;
-  encdec = new AttentionalEncoderDecoder<Builder>(model, &vm);
+  switch(vm.at("encdec-type").as<unsigned int>()){
+    case __EXP_ENC_DEC__:
+    encdec = new ExampleEncoderDecoder<Builder>(model, &vm);
+    break;
+    case __ENC_DEC__:
+    encdec = new EncoderDecoder<Builder>(model, &vm);
+    break;
+    case __ATT_ENC_DEC__:
+    encdec = new AttentionalEncoderDecoder<Builder>(model, &vm);
+    break;
+  }
   string fname = vm.at("path_model").as<string>();
   cerr << "Reading model from " << vm.at("path_test_src").as<string>() << "...\n";
   ifstream in(fname);
@@ -341,7 +361,7 @@ int main(int argc, char** argv) {
   ("src-vocab-size", po::value<unsigned int>()->default_value(20000), "source vocab size")
   ("trg-vocab-size", po::value<unsigned int>()->default_value(20000), "target vocab size")
   ("builder", po::value<int>()->default_value(0), "select builder (0:LSTM (default), 1:Fast-LSTM, 2:GRU, 3:RNN)")
-  ("encdec-type", po::value<int>()->default_value(2), "select a type of encoder-decoder (0:encoder-decoder, 1:cnn example, 2:attention (default))")
+  ("encdec-type", po::value<int>()->default_value(2), "select a type of encoder-decoder (0:cnn example, 1:encoder-decoder, 2:attention (default))")
   ("train", po::value<int>()->default_value(1), "is training ? (1:Yes,0:No)")
   ("test", po::value<int>()->default_value(1), "is test ? (1:Yes, 0:No)")
   ("dim-input", po::value<unsigned int>()->default_value(500), "dimmension size of embedding layer")

@@ -11,10 +11,15 @@ using ParaSent = pair<Sent, Sent >;
 using ParaCorp = vector<ParaSent >;
 using BatchCol = vector<unsigned int>;
 using Batch = vector<BatchCol>;
+
 const int __LSTM__ = 0;
 const int __FAST_LSTM__ = 1;
 const int __GRU__ = 2;
 const int __RNN__ = 3;
+
+const int __EXP_ENC_DEC__ = 0;
+const int __ENC_DEC__ = 1;
+const int __ATT_ENC_DEC__ = 2;
 
 //parameters
 int SOS_SRC;
