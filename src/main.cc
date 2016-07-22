@@ -23,77 +23,11 @@
 #include "attencdec.hpp"
 #include "define.hpp"
 #include "comp.hpp"
+#include "preprocess.hpp"
 
 using namespace std;
 using namespace cnn;
 using namespace cnn::expr;
-
-void FreqCut(const string file_path, cnn::Dict& d, unsigned int dim_size){
-  ifstream in(file_path);
-  assert(in);
-  map<string, unsigned int> str_freq;
-  vector<pair<string, unsigned int> > str_vec;
-  string line;
-  while(getline(in, line)) {
-    std::istringstream words(line);
-    while(words){
-      string word;
-      words >> word;
-      str_freq[word]++;
-    }
-  }
-  in.close();
-  for(auto& p1: str_freq){
-   str_vec.push_back(pair<string, int>(p1.first, p1.second));
-  }
-  CompareString comp;
-  sort(str_vec.begin(), str_vec.end(), comp);
-  for(auto& p1 : str_vec){
-    if(d.size() >= dim_size - 1){ // -1 for <UNK>
-      break;
-    }
-    d.Convert(p1.first);
-  }
-}
-
-void LoadCorpus(const string file_path, const int start, const int end, cnn::Dict& d, vector<Sent>& corpus){
-  ifstream in(file_path);
-  assert(in);
-  int tlc = 0;
-  int ttoks = 0;
-  string line;
-  while(getline(in, line)) {
-    ++tlc;
-    corpus.push_back(ReadSentence(line, &d));
-    ttoks += corpus.back().size();
-    if (corpus.back().front() != start && corpus.back().back() != end) {
-      cerr << "Sentence in " << file_path << ":" << tlc << " didn't start or end with <s>, </s>\n";
-      abort();
-    }
-  }
-  in.close();
-  cerr << tlc << " lines, " << ttoks << " tokens, " << d.size() << " types\n";
-}
-
-void ToBatch(const unsigned int bid, const unsigned int bsize, ParaCorp& sents, Batch& lbatch, Batch& rbatch){
-  lbatch.resize(sents.at(bid).first.size());
-  rbatch.resize(sents.at(bid).second.size());
-  for(unsigned int sid = bid; sid< bid + bsize; sid++){
-    for(unsigned int i=0; i<sents.at(bid).first.size(); i++){
-      lbatch[i].push_back(sents.at(sid).first.at(i));
-      rbatch[i].push_back(sents.at(sid).second.at(i));
-    }
-  }
-}
-
-void ToBatch(const unsigned int bid, const unsigned int bsize, SentList& sents, Batch& batch){
-  batch.resize(sents.at(bid).size());
-  for(unsigned int sid = bid; sid< bid + bsize; sid++){
-    for(unsigned int i=0; i<sents.at(bid).size(); i++){
-      batch[i].push_back(sents.at(bid).at(i));
-    }
-  }
-}
 
 void print_sent(Sent& osent, cnn::Dict& d_trg){
   for(auto wid : osent){
@@ -407,6 +341,7 @@ int main(int argc, char** argv) {
   ("src-vocab-size", po::value<unsigned int>()->default_value(20000), "source vocab size")
   ("trg-vocab-size", po::value<unsigned int>()->default_value(20000), "target vocab size")
   ("builder", po::value<int>()->default_value(0), "select builder (0:LSTM (default), 1:Fast-LSTM, 2:GRU, 3:RNN)")
+  ("encdec-type", po::value<int>()->default_value(2), "select a type of encoder-decoder (0:encoder-decoder, 1:cnn example, 2:attention (default))")
   ("train", po::value<int>()->default_value(1), "is training ? (1:Yes,0:No)")
   ("test", po::value<int>()->default_value(1), "is test ? (1:Yes, 0:No)")
   ("dim-input", po::value<unsigned int>()->default_value(500), "dimmension size of embedding layer")
