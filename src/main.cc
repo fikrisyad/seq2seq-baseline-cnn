@@ -330,10 +330,10 @@ int main(int argc, char** argv) {
   ("beam-size", po::value<unsigned int>()->default_value(1), "beam size")
   ("src-vocab-size", po::value<unsigned int>()->default_value(20000), "source vocab size")
   ("trg-vocab-size", po::value<unsigned int>()->default_value(20000), "target vocab size")
-  ("builder", po::value<int>()->default_value(0), "select builder (0:LSTM (default), 1:Fast-LSTM, 2:GRU, 3:RNN)")
-  ("encdec-type", po::value<int>()->default_value(2), "select a type of encoder-decoder (0:cnn example, 1:encoder-decoder, 2:attention (default))")
-  ("train", po::value<int>()->default_value(1), "is training ? (1:Yes,0:No)")
-  ("test", po::value<int>()->default_value(1), "is test ? (1:Yes, 0:No)")
+  ("builder", po::value<unsigned int>()->default_value(0), "select builder (0:LSTM (default), 1:Fast-LSTM, 2:GRU, 3:RNN)")
+  ("encdec-type", po::value<unsigned int>()->default_value(2), "select a type of encoder-decoder (0:cnn example, 1:encoder-decoder, 2:attention (default))")
+  ("train", po::value<unsigned int>()->default_value(1), "is training ? (1:Yes,0:No)")
+  ("test", po::value<unsigned int>()->default_value(1), "is test ? (1:Yes, 0:No)")
   ("dim-input", po::value<unsigned int>()->default_value(500), "dimmension size of embedding layer")
   ("dim-hidden", po::value<unsigned int>()->default_value(500), "dimmension size of hidden layer")
   ("dim-attention", po::value<unsigned int>()->default_value(64), "dimmension size of hidden layer")
@@ -344,8 +344,8 @@ int main(int argc, char** argv) {
   po::store(po::parse_command_line(argc, argv, opts), vm);
   po::notify(vm);
   cnn::Initialize(argc, argv);
-  if(vm.at("train").as<int>() > 0){
-    switch(vm.at("builder").as<int>()){
+  if(vm.at("train").as<unsigned int>() > 0){
+    switch(vm.at("builder").as<unsigned int>()){
       case __LSTM__:
       train<LSTMBuilder>(vm);
       break;
@@ -360,8 +360,8 @@ int main(int argc, char** argv) {
       break;
     }
   }
-  if(vm.at("test").as<int>() > 0){
-    switch(vm.at("builder").as<int>()){
+  if(vm.at("test").as<unsigned int>() > 0){
+    switch(vm.at("builder").as<unsigned int>()){
       case __LSTM__:
       test<LSTMBuilder>(vm);
       break;
