@@ -63,9 +63,9 @@ public:
       vm->at("dim-input").as<unsigned int>(),
       vm->at("dim-hidden").as<unsigned int>(),
       &model
-    )
+    ),
+    vm(_vm)
   {
-    vm = _vm;
     p_ie2h = model.add_parameters({unsigned(vm->at("dim-hidden").as<unsigned int>() * vm->at("depth-layer").as<unsigned int>() * 1.5), unsigned(vm->at("dim-hidden").as<unsigned int>() * vm->at("depth-layer").as<unsigned int>() * 2)});
     p_bie = model.add_parameters({unsigned(vm->at("dim-hidden").as<unsigned int>() * vm->at("depth-layer").as<unsigned int>() * 1.5)});
     p_h2oe = model.add_parameters({unsigned(vm->at("dim-hidden").as<unsigned int>() * vm->at("depth-layer").as<unsigned int>()), unsigned(vm->at("dim-hidden").as<unsigned int>() * vm->at("depth-layer").as<unsigned int>() * 1.5)});

@@ -66,9 +66,9 @@ public:
       _vm->at("dim-hidden").as<unsigned int>(),
       _vm->at("dim-hidden").as<unsigned int>(),
       &model
-    )
+    ),
+    vm(_vm)
   {
-    vm = _vm;
     p_c = model.add_lookup_parameters(vm->at("trg-vocab-size").as<unsigned int>(), {vm->at("dim-hidden").as<unsigned int>()}); 
     p_ec = model.add_lookup_parameters(vm->at("src-vocab-size").as<unsigned int>(), {vm->at("dim-hidden").as<unsigned int>()}); 
     p_R = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>(), vm->at("dim-hidden").as<unsigned int>()});

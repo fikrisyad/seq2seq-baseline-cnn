@@ -28,9 +28,24 @@ void vcwise_product(int n, const float* x0, const float* x1, float* y) {
   binaryExprKernel<<<tb.first, tb.second>>>(n, x0, x1, y, FProduct());
 }
 
+void vcwise_plus(int n, const float* x0, const float* x1, float* y) {
+  auto tb = SizeToBlockThreadPair(n);
+  binaryExprKernel<<<tb.first, tb.second>>>(n, x0, x1, y, FPlus());
+}
+
+void vcwise_quotient(int n, const float* x0, const float* x1, float* y) {
+  auto tb = SizeToBlockThreadPair(n);
+  binaryExprKernel<<<tb.first, tb.second>>>(n, x0, x1, y, FQuotient());
+}
+
 void vcwise_product_backward(int n, const float* dEdy, const float* x_other, float* dEdx) {
   auto tb = SizeToBlockThreadPair(n);
   accBinaryExprKernel<<<tb.first, tb.second>>>(n, dEdy, x_other, dEdx, FProduct());
+}
+
+void vconstant_product(int n, float c, const float* x, float* y) {
+  auto tb = SizeToBlockThreadPair(n);
+  unaryExprKernel<<<tb.first, tb.second>>>(n, x, y, FConstantProduct(c));
 }
 
 void vconstant_minusx(int n, float c, const float* x, float* y) {
@@ -96,6 +111,16 @@ void sqeucdist_backward(int n, const float* dEdy, const float* x0, const float* 
 void sgd_update(int n, const float* g, float* x, float scale, float lambda) {
   auto tb = SizeToBlockThreadPair(n);
   accBinaryExprKernel<<<tb.first, tb.second>>>(n, x, g, x, FL2SGDUpdate(lambda, scale));
+}
+
+void adagrad_update(int n, const float* g, const float* g2, float* x, float eta, float epsilon, float lambda) {
+  auto tb = SizeToBlockThreadPair(n);
+  accTernaryExprKernel<<<tb.first, tb.second>>>(n, x, g, g2, x, AdagradUpdate(lambda, eta, epsilon));
+}
+
+void vsqrt(int n, const float* x, float* y) {
+  auto tb = SizeToBlockThreadPair(n);
+  unaryExprKernel<<<tb.first, tb.second>>>(n, x, y, FSqrt());
 }
 
 // adapted from NVIDIA example

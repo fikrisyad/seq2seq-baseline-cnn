@@ -146,8 +146,10 @@ void train(boost::program_options::variables_map& vm){
     encdec = new AttentionalEncoderDecoder<Builder>(model, &vm);
     break;
   }
-  Trainer* sgd = new SimpleSGDTrainer(&model);
+  //Trainer* sgd = new SimpleSGDTrainer(&model);
+  Trainer* sgd = new AdagradTrainer(&model);
   sgd->clip_threshold *= vm.at("batch-size").as<unsigned int>();
+  sgd->eta = vm.at("eta").as<float>();
   
   vector<unsigned> order((training.size()+vm.at("batch-size").as<unsigned int>()-1)/vm.at("batch-size").as<unsigned int>());
   for (unsigned i = 0; i < order.size(); ++i){
@@ -339,6 +341,7 @@ int main(int argc, char** argv) {
   ("dim-attention", po::value<unsigned int>()->default_value(64), "dimmension size of hidden layer")
   ("depth-layer", po::value<unsigned int>()->default_value(1), "depth of hidden layer")
   ("limit-length", po::value<unsigned int>()->default_value(100), "length limit of target language in decoding")
+  ("eta", po::value<float>()->default_value(1.0), "learning rate")
   ("cnn-mem", po::value<string>()->default_value("512m"), "memory size");
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, opts), vm);

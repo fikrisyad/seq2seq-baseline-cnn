@@ -43,6 +43,24 @@ __global__ void accBinaryExprKernel(int n, const float* x0, const float* x1, flo
 }
 
 template<typename Func>
+__global__ void TernaryExprKernel(int n, const float* x0, const float* x1, const float* x2, float* y, Func func) {
+  int i = threadIdx.x + blockIdx.x * blockDim.x;
+  while (i < n) {
+    y[i] += func(x0[i], x1[i], x2[i]);
+    i += gridDim.x * blockDim.x;
+  }
+}
+
+template<typename Func>
+__global__ void accTernaryExprKernel(int n, const float* x0, const float* x1, const float* x2, float* y, Func func) {
+  int i = threadIdx.x + blockIdx.x * blockDim.x;
+  while (i < n) {
+    y[i] += func(x0[i], x1[i], x2[i]);
+    i += gridDim.x * blockDim.x;
+  }
+}
+
+template<typename Func>
 __global__ void slowReduceKernel(int n, const float* x0, const float* x1, float* y, Func func) {
   float ty = 0;
   // THIS IS BAD - FIX THIS TO MAKE IT FAST

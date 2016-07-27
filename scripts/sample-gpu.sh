@@ -9,9 +9,10 @@
 --path_test_out=$HOME/tmp.test_out \
 --path_train_src=$HOME/tmp.1000.en \
 --path_train_trg=$HOME/tmp.1000.en \
---dim-attention 128 \
---dim-hidden 128 \
---dim-input 128 \
---batch-size 16 \
+--dim-attention 32 \
+--dim-hidden 32 \
+--dim-input 32 \
+--batch-size 80 \
 --builder 1 \
---depth-layer 1
+--depth-layer 1 \
+--eta 0.001

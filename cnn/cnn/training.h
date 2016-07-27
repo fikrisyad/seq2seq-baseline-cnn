@@ -75,6 +75,8 @@ struct AdagradTrainer : public Trainer {
   bool shadow_params_allocated;
   std::vector<ShadowParameters> vp;
   std::vector<ShadowLookupParameters> vlp;
+  std::vector<float*> vpg;
+  std::vector<std::vector<float*> > vlpg;
 };
 
 struct AdadeltaTrainer : public Trainer {

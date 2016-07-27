@@ -1,4 +1,6 @@
+#include "cnn/tensor.h"
 #include "cnn/training.h"
+#include "cnn/cnn.h"
 
 #include "cnn/gpu-ops.h"
 
@@ -91,6 +93,64 @@ void MomentumSGDTrainer::update(real scale) {
 }
 
 void AdagradTrainer::update(real scale) {
+#if HAVE_CUDA
+  // executed on the first iteration to create vectors to
+  // store the velocity
+  unsigned pi = 0;
+  if (!shadow_params_allocated) {
+    shadow_params_allocated = true;
+    vp = AllocateShadowParameters(*model);
+    vlp = AllocateShadowLookupParameters(*model);
+    for (auto p : model->parameters_list()) {
+      float* g2 = static_cast<float*>(ps->allocate(p->g.d.size() * sizeof(float)));
+      vpg.push_back(g2);
+    }
+    vlpg.resize(vlp.size());
+    for (auto p : model->lookup_parameters_list()) {
+      for (unsigned int i = 0; i < p->grads.size(); i++) {
+        float* g2 = static_cast<float*>(ps->allocate(p->grads[i].d.size() * sizeof(float)));
+        vlpg[pi].push_back(g2);
+      }
+      pi++;
+    }
+  }
+  pi = 0;
+  const float gscale = clip_gradients();
+  for (auto p : model->parameters_list()) {
+    Tensor& v = vp[pi].h;
+    float* g2 = vpg[pi];
+    cudaMemcpyAsync(g2, p->g.v, sizeof(float) * p->g.d.size(), cudaMemcpyDeviceToDevice);
+    //float* g2 = static_cast<float*>(ps->allocate(p->g.d.size() * sizeof(float)));
+    //cudaMemcpyAsync(g2, p->g.v, sizeof(float) * p->g.d.size(), cudaMemcpyDeviceToDevice);
+    float s_g_scale = scale * gscale;
+    gpu::vconstant_product(p->g.d.size(), s_g_scale, g2, g2);
+    gpu::vcwise_product(p->g.d.size(), g2, g2, g2);
+    gpu::vcwise_plus(p->g.d.size(), v.v, g2, v.v);
+    //gpu::adagrad_update(p->values.d.size(), p->g.v, g2, p->values.v,  (eta * scale * gscale), epsilon, lambda);
+    gpu::adagrad_update(p->values.d.size(), p->g.v, g2, p->values.v, (eta * scale * gscale), epsilon, lambda);
+    p->clear();
+    pi++;
+  }
+  pi = 0;
+  for (auto p : model->lookup_parameters_list()) {
+    vector<Tensor>& vx = vlp[pi].h;
+    for (auto i : p->non_zero_grads) {
+      Tensor& v = vx[i];
+      float* g2 = vlpg[pi][i];
+      cudaMemcpyAsync(g2, p->grads[i].v, sizeof(float) * p->grads[i].d.size(), cudaMemcpyDeviceToDevice);
+      //float* g2 = static_cast<float*>(ps->allocate(p->grads[i].d.size() * sizeof(float)));
+      //cudaMemcpyAsync(g2, p->grads[i].v, sizeof(float) * p->grads[i].d.size(), cudaMemcpyDeviceToDevice);
+      float s_g_scale = scale * gscale;
+      gpu::vconstant_product(p->grads[i].d.size(), s_g_scale, g2, g2);
+      gpu::vcwise_product(p->grads[i].d.size(), g2, g2, g2);
+      gpu::vcwise_plus(p->grads[i].d.size(), v.v, g2, v.v);
+      //gpu::adagrad_update(p->values[i].d.size(), p->grads[i].v, g2, p->values[i].v,  (eta * scale * gscale), epsilon, lambda);
+      gpu::adagrad_update(p->values[i].d.size(), p->grads[i].v, g2, p->values[i].v, (eta * scale * gscale), epsilon, lambda);
+    }
+    p->clear();
+    pi++;
+  }
+#else
   unsigned pi;
   if (!shadow_params_allocated) {
     vp = AllocateShadowParameters(*model);
@@ -125,6 +185,7 @@ void AdagradTrainer::update(real scale) {
     }
     p->clear();
   }
+#endif
 
   ++updates;
 }

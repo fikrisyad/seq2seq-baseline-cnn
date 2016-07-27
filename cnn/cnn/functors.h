@@ -55,6 +55,12 @@ struct FHuberBackward {
   const float d;
 };
 
+struct FPlus {
+  CNN_DEVICE_FUNC inline float operator()(float a, float b) const {
+    return a + b;
+  }
+};
+
 struct FProduct {
   CNN_DEVICE_FUNC inline float operator()(float a, float b) const {
     return a * b;
@@ -79,6 +85,14 @@ struct FConstantMinus {
   FConstantMinus(float c) : c(c) {}
   CNN_DEVICE_FUNC inline float operator()(float x) const {
     return c - x;
+  }
+  float c;
+};
+
+struct FConstantProduct {
+  FConstantProduct(float c) : c(c) {}
+  CNN_DEVICE_FUNC inline float operator()(float x) const {
+    return c * x;
   }
   float c;
 };
@@ -111,6 +125,12 @@ struct FTanh {
 struct FLog {
   CNN_DEVICE_FUNC inline float operator()(float x) const {
     return logf(x);
+  }
+};
+
+struct FSqrt {
+  CNN_DEVICE_FUNC inline float operator()(float x) const {
+    return sqrt(x);
   }
 };
 
@@ -287,6 +307,16 @@ struct FL2SGDUpdate {
   }
   float lambda;
   float scale;
+};
+
+struct AdagradUpdate {
+  AdagradUpdate(float l, float e, float ep) : lambda(l), eta(-e), epsilon(ep) {}
+  CNN_DEVICE_FUNC inline float operator()(float x, float g, float g2) const {
+    return eta * g / sqrt(g2 + epsilon) - x * lambda;
+  }
+  float lambda;
+  float epsilon;
+  float eta;
 };
 
 struct FBinaryLogLoss {
