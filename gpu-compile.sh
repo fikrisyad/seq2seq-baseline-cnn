@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export PATH_TO_CNN=$PWD/cnn
-export PATH_TO_EIGEN=$PWD/eigen
+export PATH_TO_EIGEN=$PWD/cnn/eigen
 export PATH_TO_CUDA=/usr/local/cuda-7.5
 
 cd $PWD/src

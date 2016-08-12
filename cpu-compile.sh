@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export PATH_TO_CNN=$PWD/cnn
-export PATH_TO_EIGEN=$PWD/eigen
+export PATH_TO_EIGEN=$PWD/cnn/eigen
 export PATH_TO_CUDA=/usr/local/cuda-7.5
 
 cd $PWD/src
@@ -20,5 +20,5 @@ encdec-cpu main.cc \
 -lboost_serialization \
 -lboost_system \
 -lboost_filesystem \
--L${PATH_TO_CNN}/build/cnn \
+-L${PATH_TO_CNN}/build-eigen/cnn \
 -lcnn

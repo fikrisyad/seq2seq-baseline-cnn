@@ -61,6 +61,35 @@ void SimpleSGDTrainer::update(const std::vector<LookupParameters*> &lookup_param
 }
 
 void MomentumSGDTrainer::update(real scale) {
+#if HAVE_CUDA
+  // executed on the first iteration to create vectors to
+  // store the velocity
+  if (!velocity_allocated) {
+    vp = AllocateShadowParameters(*model);
+    vlp = AllocateShadowLookupParameters(*model);
+    velocity_allocated = true;
+  }
+
+  const float gscale = clip_gradients();
+  unsigned pi = 0;
+  for (auto p : model->parameters_list()) {
+    Tensor& v = vp[pi++].h;
+    //auto reg = p->values.vec() * lambda;
+    v.v = momentum * v.v - (eta * scale * gscale) * (p->g.v);
+    p->values.v += v.v - p->values.v * lambda;
+    p->clear();
+  }
+  pi = 0;
+  for (auto p : model->lookup_parameters_list()) {
+    vector<Tensor>& vx = vlp[pi++].h;
+    for (auto i : p->non_zero_grads) {
+      Tensor& v = vx[i];
+      v.v = momentum * v.v - (eta * scale * gscale) * (p->grads[i].v);
+      p->values[i].v += v.v - (p->values[i].vec()) * lambda;
+    }
+    p->clear();
+  }
+#else
   // executed on the first iteration to create vectors to
   // store the velocity
   if (!velocity_allocated) {
@@ -89,6 +118,7 @@ void MomentumSGDTrainer::update(real scale) {
     }
     p->clear();
   }
+#endif
   ++updates;
 }
 
