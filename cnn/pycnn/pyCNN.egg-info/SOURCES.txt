@@ -1,6 +1,0 @@
-pycnn.pyx
-setup.py
-pyCNN.egg-info/PKG-INFO
-pyCNN.egg-info/SOURCES.txt
-pyCNN.egg-info/dependency_links.txt
-pyCNN.egg-info/top_level.txt
