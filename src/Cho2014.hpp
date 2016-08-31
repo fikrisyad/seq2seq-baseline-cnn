@@ -22,15 +22,15 @@
 #include "define.hpp"
 #include "encdec.hpp"
 
-#ifndef INCLUDE_GUARD_EXP_ENC_DEC_HPP
-#define INCLUDE_GUARD_EXP_ENC_DEC_HPP
+#ifndef INCLUDE_GUARD_Cho2014_HPP
+#define INCLUDE_GUARD_Cho2014_HPP
 
 using namespace std;
 using namespace cnn;
 using namespace cnn::expr;
 
 template <class Builder>
-class ExampleEncoderDecoder : public EncoderDecoder<Builder> {
+class Cho2014 : public EncoderDecoder<Builder> {
 public:
   LookupParameters* p_c;
   LookupParameters* p_ec;  // map input to embedding (used in fwd and rev models)
@@ -40,12 +40,13 @@ public:
   Parameters* p_boe;
   Parameters* p_R;
   Parameters* p_bias;
+  Parameters* p_zero;
   Builder dec_builder;
   Builder rev_enc_builder;
   Builder fwd_enc_builder;
   boost::program_options::variables_map* vm;
 
-  explicit ExampleEncoderDecoder(Model& model, boost::program_options::variables_map* _vm) :
+  explicit Cho2014(Model& model, boost::program_options::variables_map* _vm) :
     dec_builder(
       vm->at("depth-layer").as<unsigned int>(),
       vm->at("dim-input").as<unsigned int>(),
@@ -74,6 +75,7 @@ public:
     p_ec = model.add_lookup_parameters(vm->at("src-vocab-size").as<unsigned int>(), {vm->at("dim-input").as<unsigned int>()}); 
     p_R = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>(), vm->at("dim-hidden").as<unsigned int>()});
     p_bias = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>()});
+    p_zero = model.add_parameters({vm->at("dim-input").as<unsigned int>()});
   }
 
   // build graph and return Expression for total loss
@@ -119,6 +121,24 @@ public:
 
     dec_builder.new_graph(cg);
     dec_builder.start_new_sequence(oein);
+  }
+  virtual Expression Decoder(ComputationGraph& cg) {
+    // decode
+    Expression i_zero = parameter(cg,p_zero);
+    Expression i_R = parameter(cg,p_R);
+    Expression i_bias = parameter(cg,p_bias);
+    Expression i_r_t = i_bias + i_R * i_zero;
+    return i_r_t;
+  }
+
+  virtual Expression Decoder(ComputationGraph& cg, const BatchCol prev) {
+    // decode
+    Expression i_x_t = lookup(cg, p_c, prev);
+    Expression i_y_t = dec_builder.add_input(i_x_t);
+    Expression i_R = parameter(cg,p_R);
+    Expression i_bias = parameter(cg,p_bias);
+    Expression i_r_t = i_bias + i_R * i_y_t;
+    return i_r_t;
   }
 };
 

@@ -21,15 +21,15 @@
 #include "define.hpp"
 #include "encdec.hpp"
 
-#ifndef INCLUDE_GUARD_ATT_ENC_DEC_HPP
-#define INCLUDE_GUARD_ATT_ENC_DEC_HPP
+#ifndef INCLUDE_GUARD_Bahdanau2015_HPP
+#define INCLUDE_GUARD_Bahdanau2015_HPP
 
 using namespace std;
 using namespace cnn;
 using namespace cnn::expr;
 
 template <class Builder>
-class AttentionalEncoderDecoder : public EncoderDecoder<Builder> {
+class Bahdanau2015 : public EncoderDecoder<Builder> {
 
 public:
   LookupParameters* p_c;
@@ -48,7 +48,7 @@ public:
   unsigned int slen;
   boost::program_options::variables_map* vm;
 
-  explicit AttentionalEncoderDecoder(Model& model, boost::program_options::variables_map* _vm) :
+  explicit Bahdanau2015(Model& model, boost::program_options::variables_map* _vm) :
     dec_builder(
       _vm->at("depth-layer").as<unsigned int>(),
       (_vm->at("depth-layer").as<unsigned int>() * 2 + 1) * _vm->at("dim-hidden").as<unsigned int>(),

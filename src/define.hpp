@@ -17,9 +17,9 @@ const int __FAST_LSTM__ = 1;
 const int __GRU__ = 2;
 const int __RNN__ = 3;
 
-const int __EXP_ENC_DEC__ = 0;
-const int __ENC_DEC__ = 1;
-const int __ATT_ENC_DEC__ = 2;
+const int __Cho2014__ = 0;
+const int __Sutskever2014__ = 1;
+const int __Bahdanau2015__ = 2;
 
 //parameters
 int SOS_SRC;

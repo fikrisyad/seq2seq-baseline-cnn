@@ -20,16 +20,18 @@
 #include <boost/program_options.hpp>
 
 #include "define.hpp"
+#include "encdec.hpp"
 
-#ifndef INCLUDE_GUARD_ENC_DEC_HPP
-#define INCLUDE_GUARD_ENC_DEC_HPP
+#ifndef INCLUDE_GUARD_Sutskever2014_HPP
+#define INCLUDE_GUARD_Sutskever2014_HPP
 
 using namespace std;
 using namespace cnn;
 using namespace cnn::expr;
 
 template <class Builder>
-class EncoderDecoder {
+class Sutskever2014 : public EncoderDecoder<Builder> {
+
 public:
   LookupParameters* p_c;
   LookupParameters* p_ec;  // map input to embedding (used in fwd and rev models)
@@ -44,9 +46,7 @@ public:
   Builder rev_enc_builder;
   boost::program_options::variables_map* vm;
 
-  EncoderDecoder(){}
-
-  explicit EncoderDecoder(Model& model, boost::program_options::variables_map* _vm) :
+  explicit Sutskever2014(Model& model, boost::program_options::variables_map* _vm) :
     dec_builder(
       vm->at("depth-layer").as<unsigned int>(),
       vm->at("dim-input").as<unsigned int>(),
@@ -76,7 +76,6 @@ public:
   // build graph and return Expression for total loss
   //void BuildGraph(const vector<int>& insent, const vector<int>& osent, ComputationGraph& cg) {
   virtual void Encoder(const Batch sents, ComputationGraph& cg) {
-/*
     // backward encoder
     rev_enc_builder.new_graph(cg);
     rev_enc_builder.start_new_sequence();
@@ -86,22 +85,18 @@ public:
     }
     dec_builder.new_graph(cg);
     dec_builder.start_new_sequence(rev_enc_builder.final_s());
-*/
   }
 
   virtual Expression Decoder(ComputationGraph& cg) {
-/*
     // decode
     Expression i_zero = parameter(cg,p_zero);
     Expression i_R = parameter(cg,p_R);
     Expression i_bias = parameter(cg,p_bias);
     Expression i_r_t = i_bias + i_R * i_zero;
     return i_r_t;
-*/
   }
 
   virtual Expression Decoder(ComputationGraph& cg, const BatchCol prev) {
-/*
     // decode
     Expression i_x_t = lookup(cg, p_c, prev);
     Expression i_y_t = dec_builder.add_input(i_x_t);
@@ -109,53 +104,8 @@ public:
     Expression i_bias = parameter(cg,p_bias);
     Expression i_r_t = i_bias + i_R * i_y_t;
     return i_r_t;
-*/
   }
-/*
-  virtual void GreedyDecode(const Batch& sents, SentList& osents, ComputationGraph &cg){
-    unsigned bsize = sents.at(0).size();
-    //unsigned slen = sents.size();
-    Encoder(sents, cg);
-    Decoder(cg);
-    Batch prev(1);
-    osents.resize(bsize);
-    for(unsigned int bi=0; bi < bsize; bi++){
-      osents[bi].push_back(SOS_TRG);
-      prev[0].push_back((unsigned int)SOS_TRG);
-    }
-    for (int t = 0; t < vm->at("limit-length").as<unsigned int>(); ++t) {
-      unsigned int end_count = 0;
-      for(unsigned int bi=0; bi < bsize; bi++){
-        if(osents[bi][t] == EOS_TRG){
-          end_count++;
-        }
-      }
-      if(end_count == bsize) break;
-      Expression i_r_t = Decoder(cg, prev[t]);
-      Expression predict = softmax(i_r_t);
-      vector<Tensor> results = cg.incremental_forward().batch_elems();
-      prev.resize(t+2);
-      for(unsigned int bi=0; bi < bsize; bi++){
-        auto output = as_vector(results.at(bi));
-        int w_id = 0;
-        if(osents[bi][t] == EOS_TRG){
-          w_id = EOS_TRG;
-        }else{
-          double w_prob = output[w_id];
-          for(unsigned int j=0; j<output.size(); j++){
-            double j_prob = output[j];
-            if(j_prob > w_prob){
-              w_id = j;
-              w_prob = j_prob;
-            }
-          }
-        }
-        osents[bi].push_back(w_id);
-        prev[t+1].push_back((unsigned int)w_id);
-      }
-    }
-  }
-*/
+
 };
 
 #endif

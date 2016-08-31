@@ -1,0 +1,77 @@
+#include "cnn/nodes.h"
+#include "cnn/cnn.h"
+#include "cnn/training.h"
+#include "cnn/timing.h"
+#include "cnn/rnn.h"
+#include "cnn/gru.h"
+#include "cnn/lstm.h"
+#include "cnn/fast-lstm.h"
+#include "cnn/dict.h"
+#include "cnn/expr.h"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <type_traits>
+
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/program_options.hpp>
+
+#include "encdec.hpp"
+#include "define.hpp"
+#include "comp.hpp"
+#include "preprocess.hpp"
+#include "metrics.hpp"
+
+namespace Decode {
+
+template <class Builder>
+void Greedy(const Batch& sents, SentList& osents, EncoderDecoder<Builder> *encdec, ComputationGraph &cg, boost::program_options::variables_map &vm){
+  unsigned bsize = sents.at(0).size();
+  //unsigned slen = sents.size();
+  encdec->Encoder(sents, cg);
+  encdec->Decoder(cg);
+  Batch prev(1);
+  osents.resize(bsize);
+  for(unsigned int bi=0; bi < bsize; bi++){
+    osents[bi].push_back(SOS_TRG);
+    prev[0].push_back((unsigned int)SOS_TRG);
+  }
+  for (int t = 0; t < vm.at("limit-length").as<unsigned int>(); ++t) {
+    unsigned int end_count = 0;
+    for(unsigned int bi=0; bi < bsize; bi++){
+      if(osents[bi][t] == EOS_TRG){
+        end_count++;
+      }
+    }
+    if(end_count == bsize) break;
+    Expression i_r_t = encdec->Decoder(cg, prev[t]);
+    Expression predict = softmax(i_r_t);
+    vector<Tensor> results = cg.incremental_forward().batch_elems();
+    prev.resize(t+2);
+    for(unsigned int bi=0; bi < bsize; bi++){
+      auto output = as_vector(results.at(bi));
+      int w_id = 0;
+      if(osents[bi][t] == EOS_TRG){
+        w_id = EOS_TRG;
+      }else{
+        double w_prob = output[w_id];
+        for(unsigned int j=0; j<output.size(); j++){
+          double j_prob = output[j];
+          if(j_prob > w_prob){
+            w_id = j;
+            w_prob = j_prob;
+          }
+        }
+      }
+      osents[bi].push_back(w_id);
+      prev[t+1].push_back((unsigned int)w_id);
+    }
+  }
+}
+
+void Beam(){
+}
+
+};
