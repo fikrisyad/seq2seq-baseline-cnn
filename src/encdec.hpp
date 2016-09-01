@@ -31,6 +31,7 @@ using namespace cnn::expr;
 template <class Builder>
 class EncoderDecoder {
 public:
+/*public:
   LookupParameters* p_c;
   LookupParameters* p_ec;  // map input to embedding (used in fwd and rev models)
   //Parameters* p_ie2h;
@@ -43,9 +44,9 @@ public:
   Builder dec_builder;
   Builder rev_enc_builder;
   boost::program_options::variables_map* vm;
-
+*/
   EncoderDecoder(){}
-
+/*
   explicit EncoderDecoder(Model& model, boost::program_options::variables_map* _vm) :
     dec_builder(
       vm->at("depth-layer").as<unsigned int>(),
@@ -72,7 +73,7 @@ public:
     p_bias = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>()});
     p_zero = model.add_parameters({vm->at("dim-input").as<unsigned int>()});
   }
-
+*/
   // build graph and return Expression for total loss
   //void BuildGraph(const vector<int>& insent, const vector<int>& osent, ComputationGraph& cg) {
   virtual void Encoder(const Batch sents, ComputationGraph& cg) {
