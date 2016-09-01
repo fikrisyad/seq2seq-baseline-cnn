@@ -21,6 +21,13 @@ const int __Cho2014__ = 0;
 const int __Sutskever2014__ = 1;
 const int __Bahdanau2015__ = 2;
 
+const int __SGD__ = 0;
+const int __MomentumSGD__ = 1;
+const int __Adagrad__ = 2;
+const int __Adadelta__ = 3;
+const int __RMSprop__ = 4;
+const int __Adam__ = 5;
+
 //parameters
 int SOS_SRC;
 int EOS_SRC;
