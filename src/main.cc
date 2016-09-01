@@ -150,11 +150,29 @@ void train(boost::program_options::variables_map& vm){
     encdec = new Bahdanau2015<Builder>(model, &vm);
     break;
   }
-  //Trainer* sgd = new SimpleSGDTrainer(&model);
-  Trainer* sgd = new AdagradTrainer(&model);
-  sgd->clip_threshold *= vm.at("batch-size").as<unsigned int>();
-  sgd->eta = vm.at("eta").as<float>();
- 
+  Trainer* trainer = nullptr;
+  switch(vm.at("trainer").as<unsigned int>()){
+    case __SGD__:
+    trainer = new SimpleSGDTrainer(&model);
+    break;
+    case __MomentumSGD__:
+    trainer = new MomentumSGDTrainer(&model);
+    break;
+    case __Adagrad__:
+    trainer = new AdagradTrainer(&model);
+    break;
+    case __Adadelta__:
+    trainer = new AdadeltaTrainer(&model);
+    break;
+    case __RMSprop__:
+    trainer = new RmsPropTrainer(&model);
+    break;
+    case __Adam__:
+    trainer = new AdamTrainer(&model);
+    break;
+  }
+  trainer->eta = vm.at("eta").as<float>();
+  trainer->clip_threshold *= vm.at("batch-size").as<unsigned int>();
   // Set the start point for each mini-batch of training dataset 
   vector<unsigned> order((training.size()+vm.at("batch-size").as<unsigned int>()-1)/vm.at("batch-size").as<unsigned int>());
   for (unsigned i = 0; i < order.size(); ++i){
@@ -201,13 +219,13 @@ void train(boost::program_options::variables_map& vm){
         cg.backward();
         offset += split_size;
       }
-      sgd->update((1.0 / double(bsize)));
+      trainer->update((1.0 / double(bsize)));
       //sgd->update();
       cerr << " E = " << (loss / double(si + 1)) << " ppl=" << exp(loss / double(si + 1)) << ' ';
       cerr  << "source length=" << training.at(order[si]).first.size() << " target length=" << training.at(order[si]).second.size() << std::endl;
     }
-    sgd->update_epoch();
-    sgd->status();
+    trainer->update_epoch();
+    trainer->status();
     
 #if 0
     lm.RandomSample();
@@ -239,7 +257,7 @@ void train(boost::program_options::variables_map& vm){
     ++lines;
     cerr << "\n***DEV [epoch=" << lines << "] F = " << (0 - dloss / (double)dev.size()) << ' ';
   }
-  delete sgd;
+  delete trainer;
 
 }
 
@@ -347,6 +365,7 @@ int main(int argc, char** argv) {
   ("src-vocab-size", po::value<unsigned int>()->default_value(20000), "source vocab size")
   ("trg-vocab-size", po::value<unsigned int>()->default_value(20000), "target vocab size")
   ("builder", po::value<unsigned int>()->default_value(0), "select builder (0:LSTM (default), 1:Fast-LSTM, 2:GRU, 3:RNN)")
+  ("trainer", po::value<unsigned int>()->default_value(0), "select trainer (0:SGD (default), 1:MomentumSGD, 2:Adagrad, 3:Adadelta, 4:RMSprop, 5:Adam)")
   ("encdec-type", po::value<unsigned int>()->default_value(2), "select a type of encoder-decoder (0:cnn example, 1:encoder-decoder, 2:attention (default))")
   ("train", po::value<unsigned int>()->default_value(1), "is training ? (1:Yes,0:No)")
   ("test", po::value<unsigned int>()->default_value(1), "is test ? (1:Yes, 0:No)")
