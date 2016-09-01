@@ -22,6 +22,7 @@ double f_measure(Sent &isent, Sent &osent, cnn::Dict& d_src, cnn::Dict& d_trg){
       cnt++;
     }
   }
+std::cout << std::endl;
   if(cnt == 0){
     return 0.0;
   }

@@ -57,6 +57,7 @@ void train(boost::program_options::variables_map& vm){
   d_src.Freeze(); // no new word types allowed
   d_src.SetUnk("<unk>");
   UNK_SRC = d_src.Convert("<unk>");
+  vm.at("src-vocab-size").value() = d_src.size();
   //vm.at("src-vocab-size").as<int>() = d_src.size();
   LoadCorpus(vm.at("path_train_src").as<string>(), SOS_SRC, EOS_SRC, d_src, training_src);
 
@@ -67,6 +68,7 @@ void train(boost::program_options::variables_map& vm){
   d_trg.Freeze(); // no new word types allowed
   d_trg.SetUnk("<unk>");
   UNK_TRG = d_trg.Convert("<unk>");
+  vm.at("trg-vocab-size").value() = d_trg.size();
   //vm.at("trg-vocab-size").as<int>() = d_trg.size();
   LoadCorpus(vm.at("path_train_trg").as<string>(), SOS_TRG, EOS_TRG, d_trg, training_trg);
   cerr << "Writing source dictionary to " << vm.at("path_dict_src").as<string>() << "...\n";
@@ -173,7 +175,6 @@ void train(boost::program_options::variables_map& vm){
     double loss = 0;
     for (unsigned si = 0; si < order.size(); ++si) {
       // build graph for this instance
-std::cout << "src:" << training.at(order[si]).first.size() << "trg:" << training.at(order[si]).second.size() << std::endl;
       unsigned bsize = std::min((unsigned)training.size() - order[si], vm.at("batch-size").as<unsigned int>()); // Batch size
       for(int i = 0, offset = order[si]; i <= bsize / vm.at("parallel").as<unsigned int>(); i++){
         unsigned split_size = 0;
@@ -203,6 +204,7 @@ std::cout << "src:" << training.at(order[si]).first.size() << "trg:" << training
       sgd->update((1.0 / double(bsize)));
       //sgd->update();
       cerr << " E = " << (loss / double(si + 1)) << " ppl=" << exp(loss / double(si + 1)) << ' ';
+      cerr  << "source length=" << training.at(order[si]).first.size() << " target length=" << training.at(order[si]).second.size() << std::endl;
     }
     sgd->update_epoch();
     sgd->status();

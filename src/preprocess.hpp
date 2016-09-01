@@ -18,6 +18,7 @@ using namespace std;
 using namespace cnn;
 using namespace cnn::expr;
 
+// return the current word size
 void FreqCut(const string file_path, cnn::Dict& d, unsigned int dim_size){
   ifstream in(file_path);
   assert(in);
