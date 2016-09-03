@@ -149,6 +149,11 @@ void train(boost::program_options::variables_map& vm){
     case __Bahdanau2015__:
     encdec = new Bahdanau2015<Builder>(model, &vm);
     break;
+/*
+    case __Luong2015__:
+    encdec = new Luong2015<Builder>(model, &vm);
+    break;
+*/
   }
   Trainer* trainer = nullptr;
   switch(vm.at("trainer").as<unsigned int>()){
@@ -171,8 +176,9 @@ void train(boost::program_options::variables_map& vm){
     trainer = new AdamTrainer(&model);
     break;
   }
-  trainer->eta = vm.at("eta").as<float>();
+  //trainer->eta = vm.at("eta").as<float>();
   trainer->clip_threshold *= vm.at("batch-size").as<unsigned int>();
+  trainer->clipping_enabled = 0;
   // Set the start point for each mini-batch of training dataset 
   vector<unsigned> order((training.size()+vm.at("batch-size").as<unsigned int>()-1)/vm.at("batch-size").as<unsigned int>());
   for (unsigned i = 0; i < order.size(); ++i){
@@ -220,8 +226,7 @@ void train(boost::program_options::variables_map& vm){
         offset += split_size;
       }
       trainer->update((1.0 / double(bsize)));
-      //sgd->update();
-      cerr << " E = " << (loss / double(si + 1)) << " ppl=" << exp(loss / double(si + 1)) << ' ';
+      cerr << " E = " << (loss / double(si)) << " ppl=" << exp(loss / double(si)) << ' ';
       cerr  << "source length=" << training.at(order[si]).first.size() << " target length=" << training.at(order[si]).second.size() << std::endl;
     }
     trainer->update_epoch();
@@ -266,7 +271,7 @@ void test(boost::program_options::variables_map& vm){
   cnn::Dict d_src, d_trg;
   ParaCorp training, dev;
   vector<Sent > test_src, test_out;
-  cerr << "Reading source dictionary from " << vm.at("path_test_src").as<string>() << "...\n";
+  cerr << "Reading source dictionary from " << vm.at("path_dict_src").as<string>() << "...\n";
   {
     string fname = vm.at("path_dict_src").as<string>();
     ifstream in(fname);
@@ -274,7 +279,7 @@ void test(boost::program_options::variables_map& vm){
     ia >> d_src;
     in.close();
   }
-  cerr << "Reading target dictionary from " << vm.at("path_test_src").as<string>() << "...\n";
+  cerr << "Reading target dictionary from " << vm.at("path_dict_trg").as<string>() << "...\n";
   {
     string fname = vm.at("path_dict_trg").as<string>();
     ifstream in(fname);
@@ -288,6 +293,8 @@ void test(boost::program_options::variables_map& vm){
   SOS_TRG = d_trg.Convert("<s>");
   EOS_TRG = d_trg.Convert("</s>");
   LoadCorpus(vm.at("path_test_src").as<string>(), SOS_SRC, EOS_SRC, d_src, test_src);
+  vm.at("src-vocab-size").value() = d_src.size();
+  vm.at("trg-vocab-size").value() = d_trg.size();
   //RNNBuilder rnn(vm.at("depth-layer").as<int>(), vm.at("dim-input").as<int>(), vm.at("dim-hidden").as<int>(), &model);
   //EncoderDecoder<SimpleRNNBuilder> lm(model);
   Model model;
@@ -302,9 +309,14 @@ void test(boost::program_options::variables_map& vm){
     case __Bahdanau2015__:
     encdec = new Bahdanau2015<Builder>(model, &vm);
     break;
+/*
+    case __Luong2015__:
+    encdec = new Luong2015<Builder>(model, &vm);
+    break;
+*/
   }
   string fname = vm.at("path_model").as<string>();
-  cerr << "Reading model from " << vm.at("path_test_src").as<string>() << "...\n";
+  cerr << "Reading model from " << vm.at("path_model").as<string>() << "...\n";
   ifstream in(fname);
   boost::archive::text_iarchive ia(in);
   ia >> model;
