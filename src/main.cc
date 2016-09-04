@@ -324,20 +324,20 @@ void test(boost::program_options::variables_map& vm){
   // creating mini-batches
   CompareString comp;
   sort(test_src.begin(), test_src.end(), comp);
-  for(size_t i = 0; i < test_src.size(); i += vm.at("batch-size").as<unsigned int>()){
-    for(size_t j = 1; j < vm.at("batch-size").as<unsigned int>() && i+j < test_src.size(); ++j){
+  for(size_t i = 0; i < test_src.size(); i += vm.at("parallel").as<unsigned int>()){
+    for(size_t j = 1; j < vm.at("parallel").as<unsigned int>() && i+j < test_src.size(); ++j){
       while(test_src.at(i+j).size() < test_src.at(i).size()){ // source padding
         test_src.at(i+j).push_back(EOS_SRC);
       }
     }
   }
-  vector<unsigned> test_order((test_src.size()+vm.at("batch-size").as<unsigned int>()-1)/vm.at("batch-size").as<unsigned int>());
+  vector<unsigned> test_order((test_src.size()+vm.at("parallel").as<unsigned int>()-1)/vm.at("parallel").as<unsigned int>());
   for (unsigned i = 0; i < test_order.size(); ++i){
-    test_order[i] = i * vm.at("batch-size").as<unsigned int>();
+    test_order[i] = i * vm.at("parallel").as<unsigned int>();
   }
   for(unsigned int tsi=0; tsi < test_order.size(); tsi++){
     ComputationGraph cg;
-    unsigned test_bsize = std::min((unsigned)test_order.size() - test_order[tsi], vm.at("batch-size").as<unsigned int>()); // Batch size
+    unsigned test_bsize = std::min((unsigned)test_order.size() - test_order[tsi], vm.at("parallel").as<unsigned int>()); // Batch size
     Batch isents, osents;
     SentList results;
     ToBatch(test_order[tsi], test_bsize, test_src, isents);

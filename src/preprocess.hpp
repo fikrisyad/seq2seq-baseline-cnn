@@ -81,7 +81,7 @@ void ToBatch(const unsigned int bid, const unsigned int bsize, SentList& sents, 
   batch.resize(sents.at(bid).size());
   for(unsigned int sid = bid; sid< bid + bsize; sid++){
     for(unsigned int i=0; i<sents.at(bid).size(); i++){
-      batch[i].push_back(sents.at(bid).at(i));
+      batch[i].push_back(sents.at(sid).at(i));
     }
   }
 }
