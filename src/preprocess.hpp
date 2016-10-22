@@ -72,6 +72,8 @@ void ToBatch(const unsigned int bid, const unsigned int bsize, ParaCorp& sents, 
   for(unsigned int sid = bid; sid< bid + bsize; sid++){
     for(unsigned int i=0; i<sents.at(bid).first.size(); i++){
       lbatch[i].push_back(sents.at(sid).first.at(i));
+    }
+    for(unsigned int i=0; i<sents.at(bid).second.size(); i++){
       rbatch[i].push_back(sents.at(sid).second.at(i));
     }
   }

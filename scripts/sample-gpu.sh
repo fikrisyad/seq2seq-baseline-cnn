@@ -1,18 +1,21 @@
 ./src/encdec-gpu \
---cnn-mem 1800m \
---path_dev_src=$HOME/tmp.1000.en \
---path_dev_trg=$HOME/tmp.1000.en \
+--cnn-mem 6000m \
+--path_dev_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-dev.lc.sb.ja \
+--path_dev_trg=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-dev.lc.sb.en \
 --path_dict_src=$HOME/tmp.d_src \
 --path_dict_trg=$HOME/tmp.d_trg \
 --path_model=$HOME/tmp.model \
---path_test_src=$HOME/tmp.1000.en \
+--path_test_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-test.lc.sb.ja \
 --path_test_out=$HOME/tmp.test_out \
---path_train_src=$HOME/tmp.1000.en \
---path_train_trg=$HOME/tmp.1000.en \
---dim-attention 32 \
---dim-hidden 32 \
---dim-input 32 \
---batch-size 80 \
---builder 1 \
+--path_train_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-train.cln.lc.sb.ja \
+--path_train_trg=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-train.cln.lc.sb.en \
+--dim-attention 512 \
+--dim-hidden 1024 \
+--dim-input 128 \
+--src-vocab-size 20000 \
+--trg-vocab-size 20000 \
+--batch-size 4 \
+--parallel 4 \
+--builder 2 \
 --depth-layer 1 \
 --eta 0.001
