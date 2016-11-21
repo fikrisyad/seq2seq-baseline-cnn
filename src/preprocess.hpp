@@ -66,7 +66,7 @@ void LoadCorpus(const string file_path, const int start, const int end, cnn::Dic
   cerr << tlc << " lines, " << ttoks << " tokens, " << d.size() << " types\n";
 }
 
-void ToBatch(const unsigned int bid, const unsigned int bsize, ParaCorp& sents, Batch& lbatch, Batch& rbatch){
+void CorpusToBatch(const unsigned int bid, const unsigned int bsize, ParaCorp& sents, Batch& lbatch, Batch& rbatch){
   lbatch.resize(sents.at(bid).first.size());
   rbatch.resize(sents.at(bid).second.size());
   for(unsigned int sid = bid; sid< bid + bsize; sid++){
@@ -79,13 +79,20 @@ void ToBatch(const unsigned int bid, const unsigned int bsize, ParaCorp& sents, 
   }
 }
 
-void ToBatch(const unsigned int bid, const unsigned int bsize, SentList& sents, Batch& batch){
+void CorpusToBatch(const unsigned int bid, const unsigned int bsize, SentList& sents, Batch& batch){
   batch.resize(sents.at(bid).size());
   for(unsigned int sid = bid; sid< bid + bsize; sid++){
     for(unsigned int i=0; i<sents.at(bid).size(); i++){
       batch[i].push_back(sents.at(sid).at(i));
     }
   }
+}
+
+void SentToBatch(const Sent& sent, Batch& batch){
+	batch.resize(sent.size());
+  for(unsigned int sid=0; sid < sent.size(); sid++){
+    batch[sid].push_back(sent.at(sid));
+	}
 }
 
 #endif

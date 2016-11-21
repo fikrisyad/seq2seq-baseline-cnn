@@ -7,18 +7,16 @@
 --path_model=$HOME/tmp.model \
 --path_test_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-test.lc.sb.ja \
 --path_test_out=$HOME/tmp.test_out \
---path_train_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-train.cln.lc.se.ja \
---path_train_trg=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-train.cln.lc.se.en \
---dim-attention 64 \
---dim-hidden 128 \
+--path_train_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-dev.lc.sb.ja \
+--path_train_trg=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-dev.lc.sb.en \
+--dim-attention 128 \
+--dim-hidden 256 \
 --dim-input 128 \
 --src-vocab-size 20000 \
 --trg-vocab-size 20000 \
---batch-size 40 \
---parallel 40 \
+--batch-size 80 \
+--parallel 80 \
 --builder 2 \
 --trainer 5 \
 --depth-layer 1 \
---length-limit 100 \
---eta 0.001 \
---train 0
+--eta 0.001

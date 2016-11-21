@@ -44,7 +44,6 @@ void print_sent(Sent& osent, cnn::Dict& d_trg){
   cout << endl;
 }
 
-
 template <class Builder>
 void train(boost::program_options::variables_map& vm){
   cnn::Dict d_src, d_trg;
@@ -186,9 +185,9 @@ void train(boost::program_options::variables_map& vm){
   }
 
   // Set the start point for each mini-batch of development dataset 
-  vector<unsigned> dev_order((dev.size()+vm.at("parallel").as<unsigned int>()-1)/vm.at("parallel").as<unsigned int>());
+  vector<unsigned> dev_order((dev.size()+vm.at("parallel-dev").as<unsigned int>()-1)/vm.at("parallel-dev").as<unsigned int>());
   for (unsigned i = 0; i < dev_order.size(); ++i){
-    dev_order[i] = i * vm.at("parallel").as<unsigned int>();
+    dev_order[i] = i * vm.at("parallel-dev").as<unsigned int>();
   }
 
   unsigned lines = 0;
@@ -207,7 +206,7 @@ void train(boost::program_options::variables_map& vm){
         ComputationGraph cg;
         vector<Expression> errs;
         Batch sents, osents;
-        ToBatch(offset, split_size, training, sents, osents);
+        CorpusToBatch(offset, split_size, training, sents, osents);
         encdec->Encoder(sents, cg);
         {
           Expression i_r_t = encdec->Decoder(cg);
@@ -232,26 +231,17 @@ void train(boost::program_options::variables_map& vm){
     trainer->update_epoch();
     trainer->status();
     
-#if 0
-    lm.RandomSample();
-#endif
-    // show score on dev data?
     double dloss = 0;
-    for(unsigned int dsi=0; dsi < dev_order.size(); dsi++){
+		for(unsigned int sid = 0; sid < dev.size(); sid++){
       ComputationGraph cg;
-      unsigned dev_bsize = std::min((unsigned)dev.size() - dev_order[dsi], vm.at("parallel").as<unsigned int>()); // Batch size
-      Batch isents, osents;
-      SentList results;
-      ToBatch(dev_order[dsi], dev_bsize, dev, isents, osents);
-      Decode::Greedy<Builder>(isents, results, encdec, cg, vm);
-      for(unsigned int i = 0; i< results.size(); i++){
-        dloss -= f_measure(dev.at(i + dev_order[dsi]).second, results.at(i), d_src, d_trg); // future work : replace to bleu
-        cerr << "ref" << endl;
-        print_sent(dev.at(i + dev_order[dsi]).second, d_trg);
-        cerr << "hyp" << endl;
-        print_sent(results.at(i), d_trg);
-      }
-    }
+      Sent osent;
+      Decode::Greedy<Builder>(dev.at(sid).first, osent, encdec, cg, vm);
+      dloss -= f_measure(dev.at(sid).second, osent, d_src, d_trg); // future work : replace to bleu
+      cerr << "ref" << endl;
+      print_sent(dev.at(sid).second, d_trg);
+      cerr << "hyp" << endl;
+      print_sent(osent, d_trg);
+		}
     if (dloss < best) {
       best = dloss;
       ofstream out(vm.at("path_model").as<string>());
@@ -321,41 +311,12 @@ void test(boost::program_options::variables_map& vm){
   boost::archive::text_iarchive ia(in);
   ia >> model;
   in.close();
-  // creating mini-batches
-  CompareString comp;
-  sort(test_src.begin(), test_src.end(), comp);
-  for(size_t i = 0; i < test_src.size(); i += vm.at("parallel").as<unsigned int>()){
-    for(size_t j = 1; j < vm.at("parallel").as<unsigned int>() && i+j < test_src.size(); ++j){
-      while(test_src.at(i+j).size() < test_src.at(i).size()){ // source padding
-        test_src.at(i+j).push_back(EOS_SRC);
-      }
-    }
-  }
-  vector<unsigned> test_order((test_src.size()+vm.at("parallel").as<unsigned int>()-1)/vm.at("parallel").as<unsigned int>());
-  for (unsigned i = 0; i < test_order.size(); ++i){
-    test_order[i] = i * vm.at("parallel").as<unsigned int>();
-  }
-  for(unsigned int tsi=0; tsi < test_order.size(); tsi++){
-    ComputationGraph cg;
-    unsigned test_bsize = std::min((unsigned)test_order.size() - test_order[tsi], vm.at("parallel").as<unsigned int>()); // Batch size
-    Batch isents, osents;
-    SentList results;
-    ToBatch(test_order[tsi], test_bsize, test_src, isents);
-    Decode::Greedy<Builder>(isents, results, encdec, cg, vm);
-    for(unsigned int i = 0; i < results.size(); i++){
-      print_sent(test_src.at(i + test_order[tsi]), d_trg);
-      print_sent(results.at(i), d_trg);
-    }
-  }
-/*
-  for(unsigned int i=0; i < test_src.size(); i++){
-    ComputationGraph cg;
-    vector<int> osent;
-    greedy_decode(test_src.at(i), osent, encdec, cg);
-    print_sent(osent);
-    test_out.push_back(osent);
-  }
-*/
+	for(unsigned int sid = 0; sid < test_src.size(); sid++){
+     ComputationGraph cg;
+     Sent osent;
+     Decode::Greedy<Builder>(test_src.at(sid), osent, encdec, cg, vm);
+     print_sent(osent, d_trg);
+	}
 }
 
 int main(int argc, char** argv) {
@@ -373,6 +334,7 @@ int main(int argc, char** argv) {
   ("path_model", po::value<string>()->required(), "test input")
   ("batch-size",po::value<unsigned int>()->default_value(1), "batch size")
   ("parallel",po::value<unsigned int>()->default_value(1), "parallel size")
+  ("parallel-dev",po::value<unsigned int>()->default_value(1), "parallel size (dev)")
   ("beam-size", po::value<unsigned int>()->default_value(1), "beam size")
   ("src-vocab-size", po::value<unsigned int>()->default_value(20000), "source vocab size")
   ("trg-vocab-size", po::value<unsigned int>()->default_value(20000), "target vocab size")
@@ -385,7 +347,7 @@ int main(int argc, char** argv) {
   ("dim-hidden", po::value<unsigned int>()->default_value(500), "dimmension size of hidden layer")
   ("dim-attention", po::value<unsigned int>()->default_value(64), "dimmension size of hidden layer")
   ("depth-layer", po::value<unsigned int>()->default_value(1), "depth of hidden layer")
-  ("limit-length", po::value<unsigned int>()->default_value(100), "length limit of target language in decoding")
+  ("length-limit", po::value<unsigned int>()->default_value(100), "length limit of target language in decoding")
   ("eta", po::value<float>()->default_value(1.0), "learning rate")
   ("cnn-mem", po::value<string>()->default_value("512m"), "memory size");
   po::variables_map vm;

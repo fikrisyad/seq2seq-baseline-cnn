@@ -27,6 +27,36 @@
 namespace Decode {
 
 template <class Builder>
+void Greedy(const Sent& sent, Sent& osent, EncoderDecoder<Builder> *encdec, ComputationGraph &cg, boost::program_options::variables_map &vm){
+  //unsigned slen = sents.size();
+	Batch batch_sent;
+	SentToBatch(sent, batch_sent);
+  encdec->Encoder(batch_sent, cg);
+  encdec->Decoder(cg);
+	osent.push_back(SOS_TRG);
+  for (int t = 1; t < vm.at("length-limit").as<unsigned int>(); ++t) {
+		BatchCol batch_col;
+		batch_col.push_back(osent[t-1]);
+    Expression i_r_t = encdec->Decoder(cg, batch_col);
+    Expression predict = softmax(i_r_t);
+    std::vector<Tensor> results = cg.incremental_forward().batch_elems();
+    auto output = as_vector(results.at(0));
+    int w_id = 0;
+    double w_prob = output[w_id];
+    for(unsigned int j=0; j<output.size(); j++){
+      if(output[j] > w_prob){
+        w_id = j;
+        w_prob = output[j];
+      }
+    }
+    osent.push_back(w_id);
+    if(osent[t] == EOS_TRG){
+			break;
+    }
+  }
+}
+/*
+template <class Builder>
 void Greedy(const Batch& sents, SentList& osents, EncoderDecoder<Builder> *encdec, ComputationGraph &cg, boost::program_options::variables_map &vm){
   unsigned bsize = sents.at(0).size();
   //unsigned slen = sents.size();
@@ -38,7 +68,7 @@ void Greedy(const Batch& sents, SentList& osents, EncoderDecoder<Builder> *encde
     osents[bi].push_back(SOS_TRG);
     prev[0].push_back((unsigned int)SOS_TRG);
   }
-  for (int t = 0; t < vm.at("limit-length").as<unsigned int>(); ++t) {
+  for (int t = 0; t < vm.at("length-limit").as<unsigned int>(); ++t) {
     unsigned int end_count = 0;
     for(unsigned int bi=0; bi < bsize; bi++){
       if(osents[bi][t] == EOS_TRG){
@@ -70,7 +100,7 @@ void Greedy(const Batch& sents, SentList& osents, EncoderDecoder<Builder> *encde
     }
   }
 }
-
+*/
 void Beam(){
 }
 
