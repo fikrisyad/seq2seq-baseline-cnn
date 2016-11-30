@@ -32,7 +32,7 @@ void Greedy(const Sent& sent, Sent& osent, EncoderDecoder<Builder> *encdec, Comp
 	Batch batch_sent;
 	SentToBatch(sent, batch_sent);
   encdec->Encoder(batch_sent, cg);
-  encdec->Decoder(cg);
+  //encdec->Decoder(cg);
 	osent.push_back(SOS_TRG);
   for (int t = 1; t < vm.at("length-limit").as<unsigned int>(); ++t) {
 		BatchCol batch_col;

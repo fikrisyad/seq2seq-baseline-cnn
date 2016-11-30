@@ -208,10 +208,12 @@ void train(boost::program_options::variables_map& vm){
         Batch sents, osents;
         CorpusToBatch(offset, split_size, training, sents, osents);
         encdec->Encoder(sents, cg);
+/*
         {
           Expression i_r_t = encdec->Decoder(cg);
           Expression i_err = pickneglogsoftmax(i_r_t, osents[0]);
         }
+*/
         for (int t = 0; t < osents.size() - 1; ++t) {
           Expression i_r_t = encdec->Decoder(cg, osents[t]);
           //vector<unsigned int> next = osents[t+1];
