@@ -9,15 +9,16 @@
 --path_test_out=$HOME/tmp.test_out \
 --path_train_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-train.cln.lc.se.ja \
 --path_train_trg=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-train.cln.lc.se.en \
---dim-attention 200 \
---dim-hidden 200 \
---dim-input 100 \
---src-vocab-size 116875 \
---trg-vocab-size 67564 \
+--dim-attention 256 \
+--dim-hidden 256 \
+--dim-input 256 \
+--src-vocab-size 20000 \
+--trg-vocab-size 20000 \
 --batch-size 80 \
---parallel 10 \
+--parallel 20 \
 --builder 0 \
 --trainer 5 \
 --depth-layer 1 \
 --length-limit 100 \
---eta 0.001
+--eta 0.001 \
+--train 1

@@ -10,12 +10,12 @@
 --path_train_src=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-dev.lc.sb.ja \
 --path_train_trg=/home/lr/kamigaito/Corpora/kftt-data-1.0/data/tok/kyoto-dev.lc.sb.en \
 --dim-attention 128 \
---dim-hidden 256 \
+--dim-hidden 128 \
 --dim-input 128 \
 --src-vocab-size 20000 \
 --trg-vocab-size 20000 \
 --batch-size 80 \
---parallel 80 \
+--parallel 20 \
 --builder 2 \
 --trainer 5 \
 --depth-layer 1 \

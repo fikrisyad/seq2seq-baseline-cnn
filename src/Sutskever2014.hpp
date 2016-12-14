@@ -41,7 +41,6 @@ public:
   //Parameters* p_boe;
   Parameters* p_R;
   Parameters* p_bias;
-  Parameters* p_zero;
   Builder dec_builder;
   Builder rev_enc_builder;
   boost::program_options::variables_map* vm;
@@ -70,7 +69,6 @@ public:
     p_c = model.add_lookup_parameters(vm->at("trg-vocab-size").as<unsigned int>(), {vm->at("dim-input").as<unsigned int>()}); 
     p_R = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>(), vm->at("dim-hidden").as<unsigned int>()});
     p_bias = model.add_parameters({vm->at("trg-vocab-size").as<unsigned int>()});
-    p_zero = model.add_parameters({vm->at("dim-input").as<unsigned int>()});
   }
 
   // build graph and return Expression for total loss
@@ -85,15 +83,6 @@ public:
     }
     dec_builder.new_graph(cg);
     dec_builder.start_new_sequence(rev_enc_builder.final_s());
-  }
-
-  virtual Expression Decoder(ComputationGraph& cg) {
-    // decode
-    Expression i_zero = parameter(cg,p_zero);
-    Expression i_R = parameter(cg,p_R);
-    Expression i_bias = parameter(cg,p_bias);
-    Expression i_r_t = i_bias + i_R * i_zero;
-    return i_r_t;
   }
 
   virtual Expression Decoder(ComputationGraph& cg, const BatchCol prev) {

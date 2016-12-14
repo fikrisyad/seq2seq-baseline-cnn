@@ -20,7 +20,7 @@
 
 #include "Cho2014.hpp"
 #include "Sutskever2014.hpp"
-#include "Bahdanau2015.hpp"
+#include "Bahdanau2014.hpp"
 #include "encdec.hpp"
 #include "decode.hpp"
 #include "define.hpp"
@@ -94,11 +94,21 @@ void train(boost::program_options::variables_map& vm){
   CompareString comp;
   sort(training.begin(), training.end(), comp);
   for(unsigned int i = 0; i < training.size(); i += vm.at("batch-size").as<unsigned int>()){
-    for(unsigned int  j = 1; j < vm.at("batch-size").as<unsigned int>() && i+j < training.size(); ++j){
-      while(training.at(i+j).first.size() < training.at(i).first.size()){ // source padding
+    unsigned int max_len_src = 0;
+    unsigned int max_len_trg = 0;
+    for(unsigned int j = 0; j < vm.at("batch-size").as<unsigned int>() && i+j < training.size(); ++j){
+      if(max_len_src < training.at(i+j).first.size()){
+        max_len_src = training.at(i+j).first.size();
+      }
+      while(max_len_trg < training.at(i+j).second.size()){
+        max_len_trg = training.at(i+j).second.size();
+      }
+    }
+    for(unsigned int j = 0; j < vm.at("batch-size").as<unsigned int>() && i+j < training.size(); ++j){
+      while(training.at(i+j).first.size() < max_len_src){ // source padding
         training.at(i+j).first.push_back(EOS_SRC);
       }
-      while(training.at(i+j).second.size() < training.at(i).second.size()){ // target padding
+      while(training.at(i+j).second.size() < max_len_trg){ // target padding
         training.at(i+j).second.push_back(EOS_TRG);
       }
     }
@@ -145,8 +155,8 @@ void train(boost::program_options::variables_map& vm){
     case __Sutskever2014__:
     encdec = new Sutskever2014<Builder>(model, &vm);
     break;
-    case __Bahdanau2015__:
-    encdec = new Bahdanau2015<Builder>(model, &vm);
+    case __Bahdanau2014__:
+    encdec = new Bahdanau2014<Builder>(model, &vm);
     break;
 /*
     case __Luong2015__:
@@ -195,25 +205,21 @@ void train(boost::program_options::variables_map& vm){
     cerr << "**SHUFFLE\n";
     shuffle(order.begin(), order.end(), *rndeng);
     Timer iteration("completed in");
-    double loss = 0;
     for (unsigned si = 0; si < order.size(); ++si) {
+      cerr  << "source length=" << training.at(order[si]).first.size() << " target length=" << training.at(order[si]).second.size() << std::endl;
       // build graph for this instance
+      double loss = 0;
       unsigned bsize = std::min((unsigned)training.size() - order[si], vm.at("batch-size").as<unsigned int>()); // Batch size
-      for(int i = 0, offset = order[si]; i <= bsize / vm.at("parallel").as<unsigned int>(); i++){
-        unsigned split_size = 0;
-        split_size = std::min(order[si] + bsize - offset, vm.at("parallel").as<unsigned int>());
-        if(split_size == 0) break;
+      unsigned remain = bsize;
+      while(remain > 0){
+        unsigned parallel_size = std::min(remain, vm.at("parallel").as<unsigned int>());
+std::cout << (order[si] + bsize - remain) << " " << parallel_size << " : " << (bsize - remain) << "/" << bsize << std::endl;
+        if(parallel_size == 0) break;
         ComputationGraph cg;
         vector<Expression> errs;
         Batch sents, osents;
-        CorpusToBatch(offset, split_size, training, sents, osents);
+        CorpusToBatch(order[si] + bsize - remain, parallel_size, training, sents, osents);
         encdec->Encoder(sents, cg);
-/*
-        {
-          Expression i_r_t = encdec->Decoder(cg);
-          Expression i_err = pickneglogsoftmax(i_r_t, osents[0]);
-        }
-*/
         for (int t = 0; t < osents.size() - 1; ++t) {
           Expression i_r_t = encdec->Decoder(cg, osents[t]);
           //vector<unsigned int> next = osents[t+1];
@@ -222,13 +228,14 @@ void train(boost::program_options::variables_map& vm){
         }
         Expression i_nerr = sum_batches(sum(errs));
         //cg.PrintGraphviz();
-        loss += as_scalar(cg.forward()) / (double)bsize;
+        loss += as_scalar(cg.forward());
         cg.backward();
-        offset += split_size;
+        remain -= parallel_size;
       }
       trainer->update((1.0 / double(bsize)));
-      cerr << " E = " << (loss / double(si)) << " ppl=" << exp(loss / double(si)) << ' ';
-      cerr  << "source length=" << training.at(order[si]).first.size() << " target length=" << training.at(order[si]).second.size() << std::endl;
+      cerr << "E = " << (loss / double(bsize)) << " ppl=" << exp(loss / double(bsize)) << ' ' << std::endl;
+      cerr << std::endl;
+      //cerr  << "source length=" << training.at(order[si]).first.size() << " target length=" << training.at(order[si]).second.size() << std::endl;
     }
     trainer->update_epoch();
     trainer->status();
@@ -298,8 +305,8 @@ void test(boost::program_options::variables_map& vm){
     case __Sutskever2014__:
     encdec = new Sutskever2014<Builder>(model, &vm);
     break;
-    case __Bahdanau2015__:
-    encdec = new Bahdanau2015<Builder>(model, &vm);
+    case __Bahdanau2014__:
+    encdec = new Bahdanau2014<Builder>(model, &vm);
     break;
 /*
     case __Luong2015__:

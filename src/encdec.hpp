@@ -90,16 +90,6 @@ public:
 */
   }
 
-  virtual Expression Decoder(ComputationGraph& cg) {
-/*
-    // decode
-    Expression i_zero = parameter(cg,p_zero);
-    Expression i_R = parameter(cg,p_R);
-    Expression i_bias = parameter(cg,p_bias);
-    Expression i_r_t = i_bias + i_R * i_zero;
-    return i_r_t;
-*/
-  }
 
   virtual Expression Decoder(ComputationGraph& cg, const BatchCol prev) {
 /*

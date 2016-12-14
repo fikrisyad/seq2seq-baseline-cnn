@@ -19,7 +19,7 @@ const int __RNN__ = 3;
 
 const int __Cho2014__ = 0;
 const int __Sutskever2014__ = 1;
-const int __Bahdanau2015__ = 2;
+const int __Bahdanau2014__ = 2;
 
 const int __SGD__ = 0;
 const int __MomentumSGD__ = 1;

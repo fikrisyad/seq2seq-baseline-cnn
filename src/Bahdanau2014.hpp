@@ -21,15 +21,15 @@
 #include "define.hpp"
 #include "encdec.hpp"
 
-#ifndef INCLUDE_GUARD_Bahdanau2015_HPP
-#define INCLUDE_GUARD_Bahdanau2015_HPP
+#ifndef INCLUDE_GUARD_Bahdanau2014_HPP
+#define INCLUDE_GUARD_Bahdanau2014_HPP
 
 using namespace std;
 using namespace cnn;
 using namespace cnn::expr;
 
 template <class Builder>
-class Bahdanau2015 : public EncoderDecoder<Builder> {
+class Bahdanau2014 : public EncoderDecoder<Builder> {
 
 public:
   LookupParameters* p_c;
@@ -39,7 +39,6 @@ public:
   Parameters* p_Wa;
   Parameters* p_Ua;
   Parameters* p_va;
-  Parameters* p_zero;
   Builder dec_builder;
   Builder rev_enc_builder;
   Builder fwd_enc_builder;
@@ -48,7 +47,7 @@ public:
   unsigned int slen;
   boost::program_options::variables_map* vm;
 
-  explicit Bahdanau2015(Model& model, boost::program_options::variables_map* _vm) :
+  explicit Bahdanau2014(Model& model, boost::program_options::variables_map* _vm) :
     dec_builder(
       _vm->at("depth-layer").as<unsigned int>(),
       (_vm->at("depth-layer").as<unsigned int>() * 2 + 1) * _vm->at("dim-hidden").as<unsigned int>(),
@@ -76,7 +75,6 @@ public:
     p_Wa = model.add_parameters({vm->at("dim-attention").as<unsigned int>(), unsigned(vm->at("dim-hidden").as<unsigned int>() * vm->at("depth-layer").as<unsigned int>())});
     p_Ua = model.add_parameters({vm->at("dim-attention").as<unsigned int>(), unsigned(vm->at("dim-hidden").as<unsigned int>() * 2 * vm->at("depth-layer").as<unsigned int>())});
     p_va = model.add_parameters({vm->at("dim-attention").as<unsigned int>()});
-    p_zero = model.add_parameters({vm->at("dim-hidden").as<unsigned int>()});
   }
 
   // build graph and return Expression for total loss
@@ -113,21 +111,6 @@ public:
     i_Uahj = i_Ua * i_h_enc;
     dec_builder.new_graph(cg);
     dec_builder.start_new_sequence(rev_enc_builder.final_s());
-  }
-
-  virtual Expression Decoder(ComputationGraph& cg) {
-    // decode
-    Expression i_va = parameter(cg, p_va);
-    Expression i_e_t = transpose(tanh(i_Uahj)) * i_va;
-    Expression i_alpha_t = softmax(i_e_t);
-    Expression i_c_t = i_h_enc * i_alpha_t;
-    Expression i_init = parameter(cg, p_zero);
-    Expression i_input = concatenate(vector<Expression>({i_init, i_c_t})); 
-    Expression i_y_t = dec_builder.add_input(i_input);
-    Expression i_R = parameter(cg,p_R);
-    Expression i_bias = parameter(cg,p_bias);
-    Expression i_r_t = i_bias + i_R * i_y_t;
-    return i_r_t;
   }
 
   virtual Expression Decoder(ComputationGraph& cg, const BatchCol prev) {

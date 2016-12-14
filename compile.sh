@@ -9,7 +9,7 @@ cd $PWD/src
 g++ \
 -g \
 -o \
-encdec-gpu main.cc \
+encdec main.cc \
 -I${PATH_TO_CNN} \
 -I${PATH_TO_EIGEN} \
 -I${PATH_TO_CUDA}/include \
